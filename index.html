@@ -156,6 +156,11 @@
                     <div class="text-gray-400 text-[10px] uppercase tracking-wider">Locales</div>
                     <div class="font-bold text-cyber-gold text-sm" id="unlockedRestCount">0</div>
                 </div>
+                <div class="w-px h-6 bg-white/10"></div>
+                <!-- Emergency Reset Button -->
+                <button onclick="resetAllProgress()" class="text-red-400 hover:text-red-300 hover:bg-red-500/20 p-2 rounded-xl transition flex items-center justify-center" title="Reiniciar Progreso de Emergencia">
+                    <i class="fas fa-power-off text-sm"></i>
+                </button>
             </div>
         </div>
     </header>
@@ -221,7 +226,7 @@
                             Desbloquea recomendaciones de restaurantes para visitar en la vida real cada 5 Niveles.
                         </p>
                     </div>
-                    <div class="text-right bg-black/40 border border-white/10 p-3 rounded-2xl backdrop-blur-md">
+                    <div class="text-right bg-black/40 border border-white/10 p-3 rounded-2xl backdrop-blur-md flex flex-col items-end">
                         <div class="text-[10px] text-gray-400 uppercase font-bold">Nivel Actual del Pase</div>
                         <div class="text-3xl font-black text-cyber-gold font-arcade" id="passLevelDisplay">NVL 1</div>
                     </div>
@@ -230,10 +235,15 @@
 
             <!-- Rewards Track -->
             <div class="space-y-4">
-                <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 px-1 flex items-center justify-between">
-                    <span>Recompensas del Pase</span>
-                    <span class="text-xs text-cyber-neon font-normal">Restaurante Secreto cada 5 NVL</span>
-                </h3>
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                        <span>Recompensas del Pase</span>
+                        <span class="text-xs text-cyber-neon font-normal">(Restaurante cada 5 NVL)</span>
+                    </h3>
+                    <button onclick="addNewRestaurantPrompt()" class="bg-cyber-gold/20 hover:bg-cyber-gold/30 border border-cyber-gold/50 text-cyber-gold text-xs px-3 py-1.5 rounded-xl font-extrabold flex items-center gap-1.5 transition active:scale-95 shadow-neon-gold">
+                        <i class="fas fa-plus"></i> Añadir Restaurante
+                    </button>
+                </div>
 
                 <div id="passTrackContainer" class="space-y-3">
                     <!-- Pass Items rendered dynamically -->
@@ -438,7 +448,9 @@
                 5: { name: "Goiko Grill / Tu Burguer Favorita", note: "Restaurante desbloqueado al NVL 5", visits: 0 },
                 10: { name: "Casa Lucio / Asador Premium", note: "Restaurante desbloqueado al NVL 10", visits: 0 },
                 15: { name: "Restaurante Japonés / Ramen Bar", note: "Restaurante desbloqueado al NVL 15", visits: 0 },
-                20: { name: "Estrella Michelin / Experiencia Top", note: "Restaurante desbloqueado al NVL 20", visits: 0 }
+                20: { name: "Estrella Michelin / Experiencia Top", note: "Restaurante desbloqueado al NVL 20", visits: 0 },
+                25: { name: "Pizzería Nápoles Auténtica", note: "Restaurante desbloqueado al NVL 25", visits: 0 },
+                30: { name: "Marisquería de Mar", note: "Restaurante desbloqueado al NVL 30", visits: 0 }
             }
         };
 
@@ -681,13 +693,11 @@
             const container = document.getElementById('passTrackContainer');
             container.innerHTML = '';
 
-            const passLevels = [5, 10, 15, 20, 25, 30];
+            // Get all configured level thresholds sorted numerically
+            const passLevels = Object.keys(state.restaurants).map(Number).sort((a, b) => a - b);
 
             passLevels.forEach(lvl => {
                 const isUnlocked = state.user.level >= lvl;
-                if (!state.restaurants[lvl]) {
-                    state.restaurants[lvl] = { name: `Restaurante Nivel ${lvl}`, note: "Añade tu restaurante favorito", visits: 0 };
-                }
                 const restData = state.restaurants[lvl];
                 const visits = restData.visits || 0;
 
@@ -737,6 +747,20 @@
 
                 container.appendChild(card);
             });
+        }
+
+        // --- ADD NEW RESTAURANT PROMPT ---
+        function addNewRestaurantPrompt() {
+            playSound('click');
+            const existingLevels = Object.keys(state.restaurants).map(Number);
+            const maxLvl = existingLevels.length > 0 ? Math.max(...existingLevels) : 0;
+            const nextLvl = maxLvl + 5;
+
+            document.getElementById('editRestLevel').value = nextLvl;
+            document.getElementById('editRestName').value = `Nuevo Local NVL ${nextLvl}`;
+            document.getElementById('editRestNote').value = `Restaurante desbloqueable al alcanzar el Nivel ${nextLvl}`;
+
+            document.getElementById('restaurantModal').classList.remove('hidden');
         }
 
         function incrementRestaurantVisits(lvl) {
@@ -886,6 +910,21 @@
                 state.user.name = newName.trim();
                 saveState();
                 renderHeader();
+            }
+        }
+
+        // --- EMERGENCY RESET FUNCTION ---
+        function resetAllProgress() {
+            playSound('click');
+            const confirmReset = window.confirm("⚠️ ¿Estás seguro de que deseas reiniciar TODO tu progreso?\n\nSe borrarán tus platos completados, nivel, XP y visitas registradas.");
+            if (confirmReset) {
+                localStorage.removeItem('foodie_quest_state');
+                state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                saveState();
+                renderHeader();
+                renderRoute();
+                renderBattlePass();
+                playSound('complete');
             }
         }
 
