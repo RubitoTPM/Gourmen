@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gourmet Quest - Battle Pass & Food Route</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Outfits & Press Start 2P -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0B0D17',
+                            card: '#16192B',
+                            accent: '#FF0055',
+                            neon: '#00F0FF',
+                            gold: '#FFB800',
+                            purple: '#7000FF',
+                            surface: '#20243C'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        arcade: ['"Press Start 2P"', 'monospace']
+                    },
+                    boxShadow: {
+                        'neon-pink': '0 0 20px rgba(255, 0, 85, 0.4)',
+                        'neon-cyan': '0 0 20px rgba(0, 240, 255, 0.4)',
+                        'neon-gold': '0 0 25px rgba(255, 184, 0, 0.5)',
+                        'cyber-inset': 'inset 0 2px 8px rgba(0,0,0,0.6)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0D17;
+            color: #F3F4F6;
+            font-family: 'Outfit', sans-serif;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(112, 0, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(255, 0, 85, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0D17;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #20243C;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF0055;
+        }
+
+        .cyber-border {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+        }
+
+        .cyber-border-active {
+            border: 1px solid rgba(0, 240, 255, 0.5);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 2s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 10px rgba(255, 0, 85, 0.4); }
+            100% { box-shadow: 0 0 25px rgba(255, 0, 85, 0.8); }
+        }
+
+        .path-line {
+            stroke-dasharray: 8;
+            animation: dash 30s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: 1000;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyber-accent selection:text-white pb-20">
+
+    <!-- HEADER / PROFILE TOP BAR -->
+    <header class="sticky top-0 z-40 bg-cyber-bg/90 backdrop-blur-md border-b border-white/10 px-4 py-3">
+        <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- User Info & Avatar -->
+            <div class="flex items-center gap-3">
+                <div class="relative group cursor-pointer" onclick="openAvatarModal()">
+                    <div id="avatarContainer" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyber-purple via-cyber-accent to-cyber-gold p-0.5 shadow-neon-pink">
+                        <div class="w-full h-full bg-cyber-card rounded-[14px] flex items-center justify-center text-2xl overflow-hidden relative">
+                            <span id="userAvatar">🍔</span>
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs transition">
+                                <i class="fas fa-pen text-white"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="absolute -bottom-1 -right-1 bg-cyber-gold text-black font-extrabold text-[10px] px-1.5 py-0.5 rounded-md shadow-md border border-black">
+                        NVL <span id="userLevelBadge">1</span>
+                    </span>
+                </div>
+
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 id="userNameDisplay" class="font-bold text-lg text-white leading-tight">Gourmet Hunter</h1>
+                        <button onclick="editUserName()" class="text-gray-400 hover:text-cyber-neon text-xs">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+                        <span id="userTitle" class="text-cyber-neon font-medium">Explorador del Sabor</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- XP Progress Bar -->
+            <div class="flex-1 min-w-[200px] max-w-xs">
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-gray-400 font-semibold">XP General</span>
+                    <span class="text-cyber-neon font-mono font-bold"><span id="currentXpText">0</span> / <span id="nextLevelXpText">500</span> XP</span>
+                </div>
+                <div class="w-full h-3 bg-cyber-surface rounded-full overflow-hidden p-0.5 border border-white/5">
+                    <div id="xpProgressBar" class="h-full bg-gradient-to-r from-cyber-neon via-cyber-purple to-cyber-accent rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Global Stats -->
+            <div class="flex items-center gap-4 bg-cyber-surface/60 border border-white/5 px-3 py-1.5 rounded-xl text-xs">
+                <div class="text-center">
+                    <div class="text-gray-400 text-[10px] uppercase tracking-wider">Platos</div>
+                    <div class="font-bold text-white text-sm" id="completedCount">0/0</div>
+                </div>
+                <div class="w-px h-6 bg-white/10"></div>
+                <div class="text-center">
+                    <div class="text-gray-400 text-[10px] uppercase tracking-wider">Locales</div>
+                    <div class="font-bold text-cyber-gold text-sm" id="unlockedRestCount">0</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="max-w-md mx-auto my-4 px-4">
+        <div class="bg-cyber-card p-1 rounded-2xl border border-white/10 flex text-sm font-semibold">
+            <button id="tabRouteBtn" onclick="switchTab('route')" class="flex-1 py-2 rounded-xl flex items-center justify-center gap-2 transition-all bg-cyber-accent text-white shadow-neon-pink">
+                Camino
+            </button>
+            <button id="tabPassBtn" onclick="switchTab('pass')" class="flex-1 py-2 rounded-xl flex items-center justify-center gap-2 transition-all text-gray-400 hover:text-white">
+                Pase
+            </button>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-4xl mx-auto px-4 flex-1">
+        
+        <!-- SECTION 1: GOURMET ROUTE (QUEST MAP) -->
+        <section id="routeSection" class="space-y-6">
+            
+            <div class="bg-cyber-card/80 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-white font-bold flex items-center gap-2">
+                        Camino del Paladar
+                    </h2>
+                    <p class="text-xs text-gray-400">Supera platos para ganar XP y desbloquear restaurantes clave en tu Pase.</p>
+                </div>
+                <button onclick="addNewObjectivePrompt()" class="bg-cyber-surface hover:bg-cyber-surface/80 border border-cyber-neon/40 text-cyber-neon text-xs px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95">
+                    <i class="fas fa-plus"></i> Añadir plato
+                </button>
+            </div>
+
+            <!-- Map Zigzag Container -->
+            <div class="relative py-8 px-4 bg-cyber-card/40 border border-white/5 rounded-3xl min-h-[500px] flex flex-col items-center justify-center">
+                
+                <!-- Connector Path Background Line -->
+                <div id="routePathLine" class="absolute inset-0 pointer-events-none flex justify-center">
+                    <!-- SVG connection lines generated via JS -->
+                    <svg id="svgCanvas" class="w-full h-full absolute inset-0"></svg>
+                </div>
+
+                <!-- Quest Nodes List -->
+                <div id="nodesContainer" class="relative z-10 w-full max-w-md flex flex-col gap-12 items-center">
+                    <!-- Dynamic rendering of nodes -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: FOODIE BATTLE PASS -->
+        <section id="passSection" class="hidden space-y-6">
+            
+            <!-- Pass Banner -->
+            <div class="relative overflow-hidden bg-gradient-to-r from-cyber-purple/40 via-cyber-card to-cyber-bg border border-cyber-gold/30 rounded-3xl p-6 shadow-neon-gold">
+                <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="bg-cyber-gold/20 text-cyber-gold border border-cyber-gold/40 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">
+                            Temporada 1 : Sabores Reales
+                        </span>
+                        <h2 class="text-2xl font-black text-white tracking-wide">FOODIE PASS EXCLUSIVO</h2>
+                        <p class="text-xs text-gray-300 mt-1 max-w-sm">
+                            Desbloquea recomendaciones de restaurantes para visitar en la vida real cada 5 Niveles.
+                        </p>
+                    </div>
+                    <div class="text-right bg-black/40 border border-white/10 p-3 rounded-2xl backdrop-blur-md">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold">Nivel Actual del Pase</div>
+                        <div class="text-3xl font-black text-cyber-gold font-arcade" id="passLevelDisplay">NVL 1</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rewards Track -->
+            <div class="space-y-4">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 px-1 flex items-center justify-between">
+                    <span>Recompensas del Pase</span>
+                    <span class="text-xs text-cyber-neon font-normal">Restaurante Secreto cada 5 NVL</span>
+                </h3>
+
+                <div id="passTrackContainer" class="space-y-3">
+                    <!-- Pass Items rendered dynamically -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: EDIT OBJECTIVE / DISH -->
+    <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-white/15 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 animate-fadeIn">
+            <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 id="modalTitleText" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-utensils text-cyber-accent"></i> Editar Plato
+                </h3>
+                <button onclick="closeModal('editModal')" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <input type="hidden" id="editNodeId">
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1">Icono (Emoji)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="editNodeIcon" maxlength="2" class="w-16 bg-cyber-bg border border-white/10 rounded-xl px-3 py-2 text-center text-xl text-white focus:outline-none focus:border-cyber-neon">
+                    <div class="flex-1 flex gap-2 overflow-x-auto py-1 text-xl">
+                        <button type="button" onclick="setEditEmoji('🍕')" class="hover:scale-125 transition">🍕</button>
+                        <button type="button" onclick="setEditEmoji('tacos')" class="hover:scale-125 transition">🌮</button>
+                        <button type="button" onclick="setEditEmoji('🍣')" class="hover:scale-125 transition">🍣</button>
+                        <button type="button" onclick="setEditEmoji('ramen')" class="hover:scale-125 transition">🍜</button>
+                        <button type="button" onclick="setEditEmoji('🍔')" class="hover:scale-125 transition">🍔</button>
+                        <button type="button" onclick="setEditEmoji('🥩')" class="hover:scale-125 transition">🥩</button>
+                        <button type="button" onclick="setEditEmoji('🍰')" class="hover:scale-125 transition">🍰</button>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1">Nombre del Plato / Reto</label>
+                <input type="text" id="editNodeTitle" placeholder="Ej: Hamburguesa Smash Trufada" class="w-full bg-cyber-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyber-neon">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Recompensa Base XP</label>
+                    <input type="number" id="editNodeXp" min="50" max="1000" step="50" class="w-full bg-cyber-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyber-neon">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Dificultad</label>
+                    <select id="editNodeDifficulty" class="w-full bg-cyber-bg border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyber-neon">
+                        <option value="normal">Normal</option>
+                        <option value="hard">🔥 Difícil (Doble XP)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="saveNodeEdit()" class="flex-1 bg-cyber-accent hover:bg-cyber-accent/90 text-white font-bold py-2.5 rounded-xl shadow-neon-pink transition">
+                    Guardar Plato
+                </button>
+                <button id="deleteNodeBtn" onclick="deleteNode()" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-2.5 rounded-xl font-bold transition">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDIT RESTAURANT REWARD -->
+    <div id="restaurantModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-gold/40 rounded-3xl p-6 w-full max-w-md shadow-neon-gold space-y-4">
+            <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 class="text-lg font-bold text-cyber-gold flex items-center gap-2">
+                    <i class="fas fa-store"></i> Editar Restaurante Objetivo
+                </h3>
+                <button onclick="closeModal('restaurantModal')" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <input type="hidden" id="editRestLevel">
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1">Nombre del Restaurante (Vida Real)</label>
+                <input type="text" id="editRestName" placeholder="Ej: Goiko Grill / Casa Lucio / Dabiz Muñoz" class="w-full bg-cyber-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyber-gold">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1">Especialidad / Nota opcional</label>
+                <input type="text" id="editRestNote" placeholder="Ej: Pedir la tarta de queso de postre" class="w-full bg-cyber-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyber-gold">
+            </div>
+
+            <button onclick="saveRestaurantEdit()" class="w-full bg-cyber-gold hover:bg-cyber-gold/90 text-black font-extrabold py-2.5 rounded-xl shadow-lg transition">
+                Confirmar Restaurante
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: AVATAR SELECTOR -->
+    <div id="avatarModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-white/15 rounded-3xl p-6 w-full max-w-xs shadow-2xl text-center space-y-4">
+            <h3 class="text-lg font-bold text-white">Elige tu Avatar</h3>
+            <div class="grid grid-cols-4 gap-3 text-3xl">
+                <button onclick="setAvatar('🍔')" class="p-3 bg-cyber-surface hover:bg-cyber-purple/40 rounded-xl transition">🍔</button>
+                <button onclick="setAvatar('🍕')" class="p-3 bg-cyber-surface hover:bg-cyber-purple/40 rounded-xl transition">🍕</button>
+                <button onclick="setAvatar('🌮')" class="p-3 bg-cyber-surface hover:bg-cyber-purple/40 rounded-xl transition">🌮</button>
+                <button onclick="setAvatar('🍜')" class="p-3 bg-cyber-surface hover:bg-cyber-purple/40 rounded-xl transition">🍜</button>
+                <button onclick="setAvatar('🥩')" class="p-3 bg-cyber-surface hover:bg-cyber-purple/40 rounded-xl transition">🥩</button>
+                <button onclick="setAvatar('🍣')" class="p-3 bg-cyber-surface hover:bg-cyber-purple/40 rounded-xl transition">🍣</button>
+                <button onclick="setAvatar('🍦')" class="p-3 bg-cyber-surface hover:bg-cyber-purple/40 rounded-xl transition">🍦</button>
+                <button onclick="setAvatar('👑')" class="p-3 bg-cyber-surface hover:bg-cyber-purple/40 rounded-xl transition">👑</button>
+            </div>
+            <button onclick="closeModal('avatarModal')" class="w-full bg-cyber-surface text-gray-300 py-2 rounded-xl text-xs font-bold">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- AUDIO EFFECTS (Web Audio API Synthesizer) -->
+    <script>
+        // Audio Synth Context
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'complete') {
+                    // Success chord
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3); // C6
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                } else if (type === 'levelup') {
+                    // Fanfare sound
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(554.37, now + 0.1);
+                    osc.frequency.setValueAtTime(659.25, now + 0.2);
+                    osc.frequency.setValueAtTime(880, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                } else if (type === 'click') {
+                    // Pop click
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+            } catch (e) {
+                // Audio fallback if disabled
+            }
+        }
+    </script>
+
+    <!-- CORE APP LOGIC -->
+    <script>
+        // DEFAULT INITIAL DATA STATE
+        const DEFAULT_STATE = {
+            user: {
+                name: "Gourmet Hunter",
+                avatar: "🍔",
+                level: 1,
+                xp: 0,
+                xpToNext: 500
+            },
+            nodes: [
+                { id: 1, title: "Hamburguesa Gourmet", icon: "🍔", xp: 150, difficulty: "normal", status: "available" },
+                { id: 2, title: "Plato X1", icon: "🔒", xp: 200, difficulty: "normal", status: "locked" },
+                { id: 3, title: "Plato X2", icon: "🔒", xp: 200, difficulty: "normal", status: "locked" },
+                { id: 4, title: "Plato X3", icon: "🔒", xp: 250, difficulty: "normal", status: "locked" },
+                { id: 5, title: "Plato X4", icon: "🔒", xp: 250, difficulty: "normal", status: "locked" },
+                { id: 6, title: "Plato X5", icon: "🔒", xp: 300, difficulty: "normal", status: "locked" },
+                { id: 7, title: "Plato X6", icon: "🔒", xp: 350, difficulty: "normal", status: "locked" }
+            ],
+            restaurants: {
+                5: { name: "Goiko Grill / Tu Burguer Favorita", note: "Restaurante desbloqueado al NVL 5", visits: 0 },
+                10: { name: "Casa Lucio / Asador Premium", note: "Restaurante desbloqueado al NVL 10", visits: 0 },
+                15: { name: "Restaurante Japonés / Ramen Bar", note: "Restaurante desbloqueado al NVL 15", visits: 0 },
+                20: { name: "Estrella Michelin / Experiencia Top", note: "Restaurante desbloqueado al NVL 20", visits: 0 }
+            }
+        };
+
+        let state = JSON.parse(localStorage.getItem('foodie_quest_state')) || DEFAULT_STATE;
+
+        // Initialize App
+        document.addEventListener("DOMContentLoaded", () => {
+            renderHeader();
+            renderRoute();
+            renderBattlePass();
+            window.addEventListener('resize', drawConnectingLines);
+        });
+
+        function saveState() {
+            localStorage.setItem('foodie_quest_state', JSON.stringify(state));
+        }
+
+        // --- NAVIGATION LOGIC ---
+        function switchTab(tab) {
+            playSound('click');
+            const routeSec = document.getElementById('routeSection');
+            const passSec = document.getElementById('passSection');
+            const routeBtn = document.getElementById('tabRouteBtn');
+            const passBtn = document.getElementById('tabPassBtn');
+
+            if (tab === 'route') {
+                routeSec.classList.remove('hidden');
+                passSec.classList.add('hidden');
+                routeBtn.className = "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 transition-all bg-cyber-accent text-white shadow-neon-pink";
+                passBtn.className = "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 transition-all text-gray-400 hover:text-white";
+                setTimeout(drawConnectingLines, 50);
+            } else {
+                routeSec.classList.add('hidden');
+                passSec.classList.remove('hidden');
+                passBtn.className = "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 transition-all bg-cyber-gold text-black font-bold shadow-neon-gold";
+                routeBtn.className = "flex-1 py-2 rounded-xl flex items-center justify-center gap-2 transition-all text-gray-400 hover:text-white";
+            }
+        }
+
+        // --- RENDER HEADER & USER STATS ---
+        function renderHeader() {
+            document.getElementById('userNameDisplay').innerText = state.user.name;
+            document.getElementById('userAvatar').innerText = state.user.avatar;
+            document.getElementById('userLevelBadge').innerText = state.user.level;
+            document.getElementById('currentXpText').innerText = state.user.xp;
+            document.getElementById('nextLevelXpText').innerText = state.user.xpToNext;
+            document.getElementById('passLevelDisplay').innerText = `NVL ${state.user.level}`;
+
+            const percent = Math.min(100, Math.floor((state.user.xp / state.user.xpToNext) * 100));
+            document.getElementById('xpProgressBar').style.width = `${percent}%`;
+
+            // Title calculation based on level
+            let title = "Explorador del Sabor";
+            if (state.user.level >= 5) title = "Crítico Gastronómico";
+            if (state.user.level >= 10) title = "Maestro Gourmet";
+            if (state.user.level >= 15) title = "Leyenda de las Brasas";
+            if (state.user.level >= 20) title = "Dios Hedonista";
+            document.getElementById('userTitle').innerText = title;
+
+            // Stats calculation
+            const completed = state.nodes.filter(n => n.status === 'completed').length;
+            document.getElementById('completedCount').innerText = `${completed}/${state.nodes.length}`;
+
+            // Unlocked restaurants count
+            let unlockedRest = 0;
+            Object.keys(state.restaurants).forEach(lvl => {
+                if (state.user.level >= parseInt(lvl)) unlockedRest++;
+            });
+            document.getElementById('unlockedRestCount').innerText = unlockedRest;
+        }
+
+        // --- RENDER GOURMET ROUTE (QUEST MAP) ---
+        function renderRoute() {
+            const container = document.getElementById('nodesContainer');
+            container.innerHTML = '';
+
+            state.nodes.forEach((node, index) => {
+                const alignment = index % 2 === 0 ? 'self-start sm:ml-12' : 'self-end sm:mr-12';
+
+                let nodeBg = "bg-cyber-card border-white/10 text-gray-400";
+                let actionBtn = "";
+                let statusBadge = "";
+                let diffBadge = node.difficulty === 'hard' 
+                    ? `<span class="bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] font-extrabold px-2 py-0.5 rounded-full ml-1"><i class="fas fa-fire"></i> Difícil (x2 XP)</span>` 
+                    : '';
+
+                if (node.status === 'completed') {
+                    nodeBg = "bg-cyber-surface border-cyber-neon/40 text-white shadow-neon-cyan";
+                    statusBadge = `<span class="bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/30 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-check"></i> Completado</span>`;
+                    actionBtn = `
+                        <button class="w-full bg-cyber-surface/80 text-gray-400 text-xs py-2 rounded-xl font-bold cursor-default flex items-center justify-center gap-1">
+                            <i class="fas fa-check-circle text-cyber-neon"></i> Saboreado
+                        </button>`;
+                } else if (node.status === 'available') {
+                    nodeBg = "bg-gradient-to-b from-cyber-card to-cyber-surface border-cyber-accent text-white shadow-neon-pink pulse-glow";
+                    statusBadge = `<span class="bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/40 text-[10px] font-bold px-2 py-0.5 rounded-full">Disponible (+${node.xp} XP)</span>`;
+                    actionBtn = `
+                        <button onclick="completeNode(${node.id})" class="w-full bg-gradient-to-r from-cyber-accent to-cyber-purple hover:opacity-90 text-white font-extrabold text-xs py-2.5 rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-1.5">
+                            <i class="fas fa-utensils"></i> ¡Completar / Comer!
+                        </button>`;
+                } else {
+                    nodeBg = "bg-cyber-card/60 border-white/5 text-gray-500 opacity-75";
+                    statusBadge = `<span class="bg-gray-800 text-gray-400 border border-white/5 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-lock"></i> Bloqueado</span>`;
+                    actionBtn = `
+                        <button class="w-full bg-gray-800/50 text-gray-500 text-xs py-2 rounded-xl font-semibold cursor-not-allowed">
+                            Desbloquea el anterior
+                        </button>`;
+                }
+
+                const nodeEl = document.createElement('div');
+                nodeEl.id = `node-${node.id}`;
+                nodeEl.className = `relative w-72 p-4 rounded-3xl border ${nodeBg} backdrop-blur-md transition-all duration-300 ${alignment}`;
+                
+                nodeEl.innerHTML = `
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-cyber-bg border border-white/10 flex items-center justify-center text-2xl shadow-inner">
+                                ${node.icon}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-white leading-snug flex items-center flex-wrap gap-1">
+                                    ${node.title} ${diffBadge}
+                                </h4>
+                                <div class="mt-1">${statusBadge}</div>
+                            </div>
+                        </div>
+                        <button onclick="openEditModal(${node.id})" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition text-xs" title="Editar plato">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                    </div>
+                    ${actionBtn}
+                `;
+
+                container.appendChild(nodeEl);
+            });
+
+            setTimeout(drawConnectingLines, 50);
+        }
+
+        // --- DRAW CONNECTING LINES FOR ZIGZAG ROUTE ---
+        function drawConnectingLines() {
+            const svg = document.getElementById('svgCanvas');
+            const container = document.getElementById('nodesContainer');
+            if (!svg || !container) return;
+
+            svg.innerHTML = '';
+            const nodes = state.nodes;
+
+            for (let i = 0; i < nodes.length - 1; i++) {
+                const el1 = document.getElementById(`node-${nodes[i].id}`);
+                const el2 = document.getElementById(`node-${nodes[i+1].id}`);
+
+                if (el1 && el2) {
+                    const rect1 = el1.getBoundingClientRect();
+                    const rect2 = el2.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+
+                    const x1 = rect1.left + rect1.width / 2 - containerRect.left;
+                    const y1 = rect1.top + rect1.height / 2 - containerRect.top;
+                    const x2 = rect2.left + rect2.width / 2 - containerRect.left;
+                    const y2 = rect2.top + rect2.height / 2 - containerRect.top;
+
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const controlY = (y1 + y2) / 2;
+                    const d = `M ${x1} ${y1} C ${x1} ${controlY}, ${x2} ${controlY}, ${x2} ${y2}`;
+
+                    const isCompleted = nodes[i].status === 'completed';
+                    line.setAttribute('d', d);
+                    line.setAttribute('stroke', isCompleted ? '#00F0FF' : '#20243C');
+                    line.setAttribute('stroke-width', '4');
+                    line.setAttribute('fill', 'none');
+                    line.setAttribute('stroke-linecap', 'round');
+                    if (isCompleted) line.setAttribute('class', 'path-line');
+
+                    svg.appendChild(line);
+                }
+            }
+        }
+
+        // --- ACTION: COMPLETE A DISH/OBJECTIVE ---
+        function completeNode(id) {
+            playSound('complete');
+            const node = state.nodes.find(n => n.id === id);
+            if (!node || node.status !== 'available') return;
+
+            node.status = 'completed';
+            
+            // Unlock next node in array if present (works for both predefined and custom added plates)
+            const currentIndex = state.nodes.findIndex(n => n.id === id);
+            if (currentIndex + 1 < state.nodes.length) {
+                const nextNode = state.nodes[currentIndex + 1];
+                if (nextNode.status === 'locked') {
+                    nextNode.status = 'available';
+                    if (nextNode.icon === '🔒') {
+                        nextNode.icon = '🍽️';
+                    }
+                }
+            }
+
+            confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            addExperience(node.xp);
+            saveState();
+            renderHeader();
+            renderRoute();
+        }
+
+        // --- EXPERIENCE & LEVEL UP LOGIC ---
+        function addExperience(xpAmount) {
+            state.user.xp += xpAmount;
+
+            while (state.user.xp >= state.user.xpToNext) {
+                state.user.xp -= state.user.xpToNext;
+                state.user.level += 1;
+                state.user.xpToNext = Math.floor(state.user.xpToNext * 1.25);
+                
+                // Trigger Level Up Celebration
+                playSound('levelup');
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.4 }
+                });
+
+                // Check if level unlocks a restaurant reward
+                if (state.restaurants[state.user.level]) {
+                    setTimeout(() => {
+                        alert(`🎉 ¡NUEVA RECOMPENSA DE PASE! Has alcanzado el Nivel ${state.user.level} y desbloqueado un Restaurante Secreto.`);
+                    }, 500);
+                }
+            }
+        }
+
+        // --- RENDER FOODIE BATTLE PASS ---
+        function renderBattlePass() {
+            const container = document.getElementById('passTrackContainer');
+            container.innerHTML = '';
+
+            const passLevels = [5, 10, 15, 20, 25, 30];
+
+            passLevels.forEach(lvl => {
+                const isUnlocked = state.user.level >= lvl;
+                if (!state.restaurants[lvl]) {
+                    state.restaurants[lvl] = { name: `Restaurante Nivel ${lvl}`, note: "Añade tu restaurante favorito", visits: 0 };
+                }
+                const restData = state.restaurants[lvl];
+                const visits = restData.visits || 0;
+
+                let itemCardClass = isUnlocked 
+                    ? "bg-gradient-to-r from-cyber-card via-cyber-surface to-cyber-card border-cyber-gold/50 shadow-neon-gold"
+                    : "bg-cyber-card/50 border-white/5 opacity-80";
+
+                let badge = isUnlocked 
+                    ? `<span class="bg-cyber-gold text-black font-extrabold text-[10px] px-2.5 py-1 rounded-full uppercase"><i class="fas fa-unlock"></i> Desbloqueado</span>`
+                    : `<span class="bg-gray-800 text-gray-400 border border-white/10 text-[10px] font-bold px-2.5 py-1 rounded-full"><i class="fas fa-lock"></i> Requisito: NVL ${lvl}</span>`;
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-2xl border ${itemCardClass} flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl ${isUnlocked ? 'bg-cyber-gold/20 text-cyber-gold border border-cyber-gold/40' : 'bg-gray-800 text-gray-500'} flex items-center justify-center text-2xl font-bold font-arcade shrink-0">
+                            ${lvl}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                ${badge}
+                                <span class="text-xs text-cyber-neon font-semibold">Recompensa VIP</span>
+                            </div>
+                            <h4 class="font-bold text-base text-white">
+                                ${isUnlocked ? restData.name : '??? (Restaurante Oculto)'}
+                            </h4>
+                            <p class="text-xs text-gray-400">
+                                ${isUnlocked ? restData.note : `Sube al nivel ${lvl} completando platos en tu camino para revelar.`}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-2 border-t sm:border-t-0 border-white/10 pt-2 sm:pt-0">
+                        ${isUnlocked ? `
+                            <div class="flex items-center gap-2 bg-cyber-bg/80 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-cyber-gold">
+                                <i class="fas fa-map-marker-alt"></i> Visitas: <span id="visits-count-${lvl}">${visits}</span>
+                            </div>
+                            <button onclick="incrementRestaurantVisits(${lvl})" class="bg-cyber-gold hover:bg-cyber-gold/90 text-black text-xs px-3 py-2 rounded-xl font-extrabold flex items-center gap-1 shadow-md transition active:scale-95" title="Sumar 1 visita real">
+                                <i class="fas fa-plus"></i> +1 Visita
+                            </button>
+                        ` : ''}
+                        <button onclick="openRestaurantModal(${lvl})" class="bg-cyber-surface hover:bg-cyber-surface/80 border border-white/10 text-white text-xs px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 transition">
+                            <i class="fas fa-edit text-cyber-gold"></i> Editar Local
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function incrementRestaurantVisits(lvl) {
+            playSound('click');
+            if (!state.restaurants[lvl]) {
+                state.restaurants[lvl] = { name: `Restaurante Nivel ${lvl}`, note: "", visits: 0 };
+            }
+            state.restaurants[lvl].visits = (state.restaurants[lvl].visits || 0) + 1;
+            saveState();
+            renderBattlePass();
+        }
+
+        // --- ADD NEW ROUTE NODE ---
+        function addNewObjectivePrompt() {
+            playSound('click');
+            document.getElementById('editNodeId').value = '';
+            document.getElementById('editNodeIcon').value = '🍽️';
+            document.getElementById('editNodeTitle').value = `Plato X${state.nodes.length}`;
+            document.getElementById('editNodeXp').value = '250';
+            document.getElementById('editNodeDifficulty').value = 'normal';
+            document.getElementById('modalTitleText').innerHTML = '<i class="fas fa-utensils text-cyber-accent"></i> Añadir Plato';
+            document.getElementById('deleteNodeBtn').classList.add('hidden');
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        // --- EDIT MODAL LOGIC (DISHES) ---
+        function openEditModal(id) {
+            playSound('click');
+            const node = state.nodes.find(n => n.id === id);
+            if (!node) return;
+
+            document.getElementById('editNodeId').value = node.id;
+            document.getElementById('editNodeIcon').value = node.icon;
+            document.getElementById('editNodeTitle').value = node.title;
+            const baseXP = node.difficulty === 'hard' ? node.xp / 2 : node.xp;
+            document.getElementById('editNodeXp').value = baseXP;
+            document.getElementById('editNodeDifficulty').value = node.difficulty || 'normal';
+            document.getElementById('modalTitleText').innerHTML = '<i class="fas fa-utensils text-cyber-accent"></i> Editar Plato';
+            document.getElementById('deleteNodeBtn').classList.remove('hidden');
+
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function setEditEmoji(emoji) {
+            document.getElementById('editNodeIcon').value = emoji;
+        }
+
+        function saveNodeEdit() {
+            playSound('click');
+            const idStr = document.getElementById('editNodeId').value;
+            const icon = document.getElementById('editNodeIcon').value || "🍽️";
+            const title = document.getElementById('editNodeTitle').value || "Plato Nuevo";
+            const baseXp = parseInt(document.getElementById('editNodeXp').value) || 200;
+            const difficulty = document.getElementById('editNodeDifficulty').value || 'normal';
+            const xp = difficulty === 'hard' ? baseXp * 2 : baseXp;
+
+            if (idStr === '') {
+                // Adding new node
+                const maxId = state.nodes.reduce((max, n) => Math.max(max, n.id), 0);
+                const nextId = maxId + 1;
+                const lastNode = state.nodes[state.nodes.length - 1];
+                const status = (!lastNode || lastNode.status === 'completed') ? 'available' : 'locked';
+
+                state.nodes.push({
+                    id: nextId,
+                    title,
+                    icon: status === 'available' ? icon : '🔒',
+                    xp,
+                    difficulty,
+                    status
+                });
+            } else {
+                // Editing existing node
+                const id = parseInt(idStr);
+                const node = state.nodes.find(n => n.id === id);
+                if (node) {
+                    node.icon = icon;
+                    node.title = title;
+                    node.xp = xp;
+                    node.difficulty = difficulty;
+                }
+            }
+
+            saveState();
+            renderHeader();
+            renderRoute();
+            closeModal('editModal');
+        }
+
+        function deleteNode() {
+            playSound('click');
+            const id = parseInt(document.getElementById('editNodeId').value);
+            if (state.nodes.length <= 1) {
+                alert("Debes mantener al menos un plato en tu camino.");
+                return;
+            }
+            state.nodes = state.nodes.filter(n => n.id !== id);
+            saveState();
+            renderHeader();
+            renderRoute();
+            closeModal('editModal');
+        }
+
+        // --- EDIT RESTAURANT REWARD MODAL ---
+        function openRestaurantModal(lvl) {
+            playSound('click');
+            const rest = state.restaurants[lvl] || { name: "", note: "" };
+
+            document.getElementById('editRestLevel').value = lvl;
+            document.getElementById('editRestName').value = rest.name || "";
+            document.getElementById('editRestNote').value = rest.note || "";
+
+            document.getElementById('restaurantModal').classList.remove('hidden');
+        }
+
+        function saveRestaurantEdit() {
+            playSound('click');
+            const lvl = document.getElementById('editRestLevel').value;
+            const name = document.getElementById('editRestName').value || `Restaurante Nivel ${lvl}`;
+            const note = document.getElementById('editRestNote').value || "Visita especial en la vida real";
+
+            state.restaurants[lvl] = { name, note, custom: true };
+            saveState();
+            renderBattlePass();
+            renderHeader();
+            closeModal('restaurantModal');
+        }
+
+        // --- AVATAR & USER PROFILE LOGIC ---
+        function openAvatarModal() {
+            playSound('click');
+            document.getElementById('avatarModal').classList.remove('hidden');
+        }
+
+        function setAvatar(emoji) {
+            playSound('click');
+            state.user.avatar = emoji;
+            saveState();
+            renderHeader();
+            closeModal('avatarModal');
+        }
+
+        function editUserName() {
+            playSound('click');
+            const newName = prompt("Introduce tu nuevo nombre de Foodie Hunter:", state.user.name);
+            if (newName && newName.trim() !== "") {
+                state.user.name = newName.trim();
+                saveState();
+                renderHeader();
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
